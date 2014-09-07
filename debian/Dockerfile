@@ -1,5 +1,5 @@
-FROM debian:latest
-MAINTAINER Max Schaefer <max@excloo.com>
+FROM debian:wheezy
+MAINTAINER Caleb Johnson <me@calebj.io>
 ADD etc /etc
 CMD /config/loop
 ENV DEBIAN_FRONTEND noninteractive
