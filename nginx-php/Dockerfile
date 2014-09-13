@@ -1,5 +1,5 @@
-FROM maxexcloo/nginx:latest
-MAINTAINER Max Schaefer <max@excloo.com>
+FROM calebj/nginx:latest
+MAINTAINER Caleb Johnson <me@calebj.io>
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E9C74FEEA2098A6E
 RUN echo "deb http://packages.dotdeb.org/ wheezy-php55 all" > /etc/apt/sources.list.d/php.list
 RUN apt-get update
