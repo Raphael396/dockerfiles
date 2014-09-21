@@ -10,8 +10,6 @@ RUN apt-get install -y lua5.1 prosody
 
 RUN mkdir -p /var/run/prosody
 RUN chown prosody:prosody /var/run/prosody
-# Mount prosody configuration on /etc/prosody and /var/lib/prosody
-RUN rm -r /etc/prosody/*
 
 EXPOSE 5222 5269
 

@@ -1,0 +1,3 @@
+Prosody XMPP server
+
+Mount prosody configuration, data, and logs on /etc/prosody , /var/lib/prosody , and /var/log/prosody
