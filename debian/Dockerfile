@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN useradd -u 500 core
 RUN apt-get update
 RUN apt-get upgrade -y
-RUN apt-get install -y ca-certificates inotify-tools nano pwgen supervisor tmux unzip wget
+RUN apt-get install -y ca-certificates inotify-tools nano pwgen supervisor tmux unzip wget cron
 RUN apt-get clean
 ADD init /config/init/01debian
 ADD loop /config/loop
