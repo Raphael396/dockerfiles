@@ -1,3 +1,7 @@
-mkdir -p /data/config /data/http /data/logs /data/secure
-chown -R www-data:www-data /data
+for folder in config http logs secure ; do
+	mkdir -p /data/$folder
+	chown -R www-data:www-data /data/$folder
+done
+#mkdir -p /data/config /data/http /data/logs /data/secure
+#chown -R www-data:www-data /data
 chmod 0770 /data/secure
