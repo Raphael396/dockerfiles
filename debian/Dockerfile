@@ -8,7 +8,6 @@ RUN apt-get update
 RUN apt-get upgrade -y
 RUN apt-get install -y ca-certificates inotify-tools nano pwgen supervisor tmux unzip wget cron
 RUN apt-get clean
-ADD init /config/init/01debian
 ADD loop /config/loop
 RUN chmod +x /config/loop
 RUN mkdir -p /config/data /config/init /data /var/log/supervisor
