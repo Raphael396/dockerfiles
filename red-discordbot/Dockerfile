@@ -7,8 +7,6 @@ RUN apt-get install -y --no-install-recommends git libopus0 ffmpeg python3.5 lib
 
 RUN apt-get install -y python3-pip
 
-RUN pip3 install 'git+https://github.com/Rapptz/discord.py@master#egg=discord.py[voice]'
-
 WORKDIR /opt/red/
 
 ARG repo=https://github.com/Twentysix26/Red-DiscordBot.git
@@ -20,8 +18,10 @@ RUN git clone "${repo}" /opt/red/ && \
     cp -rsbu /opt/red/stock_cogs/* /data/cogs/ && \
     cp -rsbu /opt/red/stock_data/* /data/data/
 
-VOLUME /data
+COPY run_red.py custom_requirements.txt /opt/red/
 
-COPY run_red.py /opt/red/
+RUN pip3 install -U -r requirements.txt -r custom_requirements.txt
+
+VOLUME /data
 
 ENTRYPOINT ["/usr/bin/python3.5", "/opt/red/run_red.py"]
