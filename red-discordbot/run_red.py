@@ -23,16 +23,16 @@ def stop_p(p):
         try:
             print('Attempting to stop bot gracefully...')
             p.send_signal(SIGINT)
-            p.wait(STOP_WAIT)
+            return p.wait(STOP_WAIT)
         except TimeoutExpired:
             try:
                 print('Graceful stop timed out, sending SIGTERM...')
                 p.terminate()
-                p.wait(STOP_WAIT)
+                return p.wait(STOP_WAIT)
             except TimeoutExpired:
                 print('SIGTERM stop failed, killing the bot...')
                 p.kill()
-                p.wait()
+                return p.wait()
 
 
 def start(red_py, args):
@@ -46,6 +46,7 @@ def start(red_py, args):
             os.remove(sockname)
 
     try:
+        error = False
         p = Popen(red_call)
         if args.watchdog:
             sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
@@ -58,29 +59,31 @@ def start(red_py, args):
                     data = sock.recv(1024).decode("utf-8")
                     data = [f.strip() for f in data.split('=')]
                     if data == ['WATCHDOG', '1']:
-                        #print('INFO: Watchdog pet.')
+                        # print('INFO: Watchdog pet.')
                         last_pet = time()
                 except socket.timeout:
                     pass
             else:
-                print('ERROR: Watchdog timout exceeded.')
+                if p.poll() is None:  # Still running
+                    error = True
+                    print('ERROR: Watchdog timout exceeded.')
         else:
-            p.wait()
+            ret = p.wait()
+            error = ret is not 0
     except KeyboardInterrupt:
         pass
     except:
+        error = True
         print(traceback.format_exc())
-        exit(1)
     finally:
-        stop_p(p)
+        ret = stop_p(p)
+        error = error or ret is not 0
+        if error:
+            print(error)
+            exit(1)
 
 
 def check_env(args):
-    #import importlib.util
-    #utils_path = os.path.join(os.getcwd(), 'cogs/utils/settings.py')
-    #spec = importlib.util.spec_from_file_location("Settings", utils_path)
-    #Settings = importlib.util.module_from_spec(spec)
-    # spec.loader.exec_module(Settings)
     from cogs.utils.settings import Settings
 
     email = os.environ.get('RED_EMAIL', args.email)
@@ -134,8 +137,6 @@ def check_env(args):
 
 
 def main(args):
-    #red_py = os.path.abspath(args.redpy)
-    #red_dir = os.path.split(red_py)[0]
     check_env(args)
     start(args.redpy, args)
 
@@ -153,7 +154,7 @@ if __name__ == '__main__':
     serv.add_argument('-d', '--timer', help='Watchdog timer', metavar='SECS',
                       default=DEFAULT_WATCHDOG_SECS, type=int)
     serv.add_argument('--nop', help='NOP: Exit immediately. Used to make data containers.',
-                     action='store_true')
+                      action='store_true')
 
     creds = parser.add_argument_group('Bot credentials', "Only specify one of token or email/pass. "
                                       "Command-line paramaters are overridden by the environment. "
