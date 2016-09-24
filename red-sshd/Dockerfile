@@ -14,3 +14,5 @@ RUN mkdir -p /root/.ssh/
 ENTRYPOINT ["/usr/local/bin/red_sshd"]
 
 CMD ["-D"]
+
+EXPOSE 22
