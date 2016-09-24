@@ -7,9 +7,10 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-COPY sshd.sh /usr/local/bin/red_sshd
+RUN mv /etc/ssh /etc/ssh_dist && \
+    rm /etc/ssh_dist/ssh_host_*
 
-RUN mkdir -p /root/.ssh/
+COPY sshd.sh /usr/local/bin/red_sshd
 
 ENTRYPOINT ["/usr/local/bin/red_sshd"]
 

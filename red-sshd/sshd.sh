@@ -5,18 +5,19 @@ if [ ! -d /var/run/sshd ]; then
     chmod 0755 /var/run/sshd
 fi
 
-if [ -e /data/ssh ]; then
-    mv /etc/ssh /etc/ssh_dist
+mkdir -p /root/.ssh/ /data/ssh
+
+if [ ! -e /data/ssh/sshd_config ]; then
+    rm /etc/ssh_dist/ssh_host_* || true
+    cp -a /etc/ssh_dist/* /data/ssh/
 fi
 
-if [ ! -e /data/ssh ]; then
-    mkdir -p /data/ssh
-    chown 1000:1000 /data
-    ln -s /etc/ssh /data/ssh/config
+if [ ! -e /etc/ssh ]; then
+    ln -s /data/ssh /etc/ssh
 fi
 
-if [ ! -e /etc/ssh/sshd_config ]; then
-    cp -a /etc/ssh_dist/* /etc/ssh/
+if [ ! -e /etc/ssh/ssh_host_rsa_key ]; then
+    dpkg-reconfigure openssh-server
 fi
 
 if [ -e /etc/ssh/sshd_not_to_be_run ]; then
