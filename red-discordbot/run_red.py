@@ -39,7 +39,9 @@ def start(red_py, args):
     red_call = [sys.executable, red_py]
     red_call.extend(args.args.split())
 
-    if args.watchdog:
+    watchdog = args.watchdog or os.environ.get('RED_WATCHDOG', False) in [1, '1', True]
+
+    if watchdog:
         sockname = os.path.join(os.getcwd(), 'red_discordbot.sock')
         os.environ['NOTIFY_SOCKET'] = sockname
         if os.path.exists(sockname):
@@ -47,8 +49,9 @@ def start(red_py, args):
 
     try:
         error = False
+        kbi = False
         p = Popen(red_call)
-        if args.watchdog:
+        if watchdog:
             sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
             sock.bind(sockname)
             sock.settimeout(5)
@@ -71,15 +74,14 @@ def start(red_py, args):
             ret = p.wait()
             error = ret is not 0
     except KeyboardInterrupt:
+        kbi = True
         pass
     except:
         error = True
         print(traceback.format_exc())
     finally:
         ret = stop_p(p)
-        error = error or ret is not 0
-        if error:
-            print(error)
+        if (error or ret is not 0) and not kbi:
             exit(1)
 
 
