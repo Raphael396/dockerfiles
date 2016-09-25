@@ -12,6 +12,8 @@ RUN mv /etc/ssh /etc/ssh_dist && \
 
 COPY sshd.sh /usr/local/bin/red_sshd
 
+COPY userbin.sh /etc/profile.d/
+
 ENTRYPOINT ["/usr/local/bin/red_sshd"]
 
 CMD ["-D"]

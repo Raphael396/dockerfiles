@@ -137,6 +137,13 @@ def check_env(args):
         if mod:
             s.default_mod = mod
 
+    userpath = os.path.expanduser('~')
+    userbin = os.path.join(userpath, '.local/bin')
+    currentpath = os.environ['PATH'].split(':')
+    if userbin not in currentpath:
+        currentpath.append(userbin)
+        os.environ['PATH'] = ':'.join(currentpath)
+
 
 def main(args):
     check_env(args)
