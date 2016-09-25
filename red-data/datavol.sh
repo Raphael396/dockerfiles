@@ -29,7 +29,7 @@ case $op in
     TARNAME=${1:-${NAME}.tar}
     if [ ! -e $TARNAME ]; then
         docker run --rm --volumes-from $CONTAINER -v $(pwd):/backup $IMAGE \
-            tar cf - -C /data/ . > $TARNAME || exit $?
+            tar cf /backup/$TARNAME -C /data/ .
         echo "Backup saved to $TARNAME."
     else
         echo "ERROR: $TARNAME already exists in cwd; not overwriting."
@@ -47,7 +47,7 @@ case $op in
     if [ -e $TARNAME ]; then
         docker run --name $CONTAINER $IMAGE true || exit $?
         docker run --rm --volumes-from $CONTAINER -v $(pwd):/backup $IMAGE \
-            tar xf /backup/$TARNAME -C /data/ .
+            tar xf /backup/$TARNAME -C /data/ . || exit $?
         echo "Data container $CONTAINER restored from archive."
     else
         echo "ERROR: $TARNAME doesn't exist."
