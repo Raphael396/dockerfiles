@@ -2,6 +2,8 @@ FROM ubuntu:16.04
 
 MAINTAINER Caleb Johnson <me@calebj.io>
 
+LABEL io.calebj.project = red-discordbot
+
 WORKDIR /opt/red/
 
 ARG repo=https://github.com/Twentysix26/Red-DiscordBot
