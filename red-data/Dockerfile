@@ -2,7 +2,7 @@ FROM ubuntu:16.04
 
 MAINTAINER Caleb Johnson <me@calebj.io>
 
-LABEL io.calebj.project = red-discordbot
+LABEL io.calebj.project red-discordbot
 
 WORKDIR /opt/red/
 
