@@ -3,7 +3,7 @@ FROM calebj/red-discordbot:latest
 USER root
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends openssh-server vim mc &&\
+    apt-get install -y --no-install-recommends openssh-server vim mc rsync tmux &&\
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
