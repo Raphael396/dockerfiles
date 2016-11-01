@@ -7,11 +7,12 @@ import argparse
 import traceback
 from signal import SIGINT
 from subprocess import Popen, TimeoutExpired
-from time import time
+from time import time, sleep
 
 DEFAULT_RED_ARGS = "--no-prompt"
 STOP_WAIT = 30
 DEFAULT_WATCHDOG_SECS = 90
+DEFAULT_POLL_INTERVAL = 1
 
 
 class MissingConfiguration(Exception):
@@ -33,6 +34,7 @@ def stop_p(p):
                 print('SIGTERM stop failed, killing the bot...')
                 p.kill()
                 return p.wait()
+    return 0 #  Default
 
 
 def start(red_py, args):
@@ -46,33 +48,52 @@ def start(red_py, args):
         os.environ['NOTIFY_SOCKET'] = sockname
         if os.path.exists(sockname):
             os.remove(sockname)
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        sock.bind(sockname)
+        sock.settimeout(args.poll)
 
     try:
         error = False
         kbi = False
         p = Popen(red_call)
         if watchdog:
-            sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
-            sock.bind(sockname)
-            sock.settimeout(5)
-
             last_pet = time()
-            while (time() - last_pet) < args.timer and p.poll() is None:
+
+            # Watchdog loop
+            while (time() - last_pet) < args.timer and p.poll() is None and \
+                    not (args.maint and os.path.exists(args.maint)):
                 try:
-                    data = sock.recv(1024).decode("utf-8")
+                    data = sock.recv(64).decode("utf-8")
                     data = [f.strip() for f in data.split('=')]
                     if data == ['WATCHDOG', '1']:
-                        # print('INFO: Watchdog pet.')
                         last_pet = time()
                 except socket.timeout:
                     pass
+            # Loop until maintainence file is removed, then exit
             else:
-                if p.poll() is None:  # Still running
+                if args.maint and os.path.exists(args.maint):
+                    print('INFO: Entering maintainence mode.')
+                    ret = stop_p(p)
+                    while os.path.exists(args.maint):
+                        sleep(args.poll)
+                elif p.poll() is None:  # Still running
                     error = True
                     print('ERROR: Watchdog timout exceeded.')
         else:
-            ret = p.wait()
-            error = ret is not 0
+            # Regular poll loop
+            while not (args.maint and os.path.exists(args.maint)):
+                try:
+                    ret = p.wait(timeout=args.poll)
+                    error = ret is not 0
+                    break # Should break on non-timeout
+                except TimeoutExpired:
+                    pass
+            if args.maint and os.path.exists(args.maint):
+                print('INFO: Entering maintainence mode.')
+                ret = stop_p(p)
+                while os.path.exists(args.maint):
+                    sleep(args.poll)
+
     except KeyboardInterrupt:
         kbi = True
         pass
@@ -83,7 +104,6 @@ def start(red_py, args):
         ret = stop_p(p)
         if (error or ret is not 0) and not kbi:
             exit(1)
-
 
 def check_env(args):
     from cogs.utils.settings import Settings
@@ -162,6 +182,10 @@ if __name__ == '__main__':
                       )
     serv.add_argument('-d', '--timer', help='Watchdog timer', metavar='SECS',
                       default=DEFAULT_WATCHDOG_SECS, type=int)
+    serv.add_argument('--maint', metavar='file', help="Path to maintainence indicator",
+                      default='data/red/red.down')
+    serv.add_argument('-o', '--poll', help='Bot and maintainence poll interval',
+                      metavar='SECS', default=DEFAULT_POLL_INTERVAL, type=int)
     serv.add_argument('--nop', help='NOP: Exit immediately. Used to make data containers.',
                       action='store_true')
 
