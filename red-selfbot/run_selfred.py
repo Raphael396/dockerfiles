@@ -39,6 +39,7 @@ def stop_p(p):
 
 def start(red_py, args):
     red_call = [sys.executable, red_py]
+    red_call.extend(args.args.split())
 
     watchdog = args.watchdog or os.environ.get('RED_WATCHDOG', False) in [1, '1', True]
 
