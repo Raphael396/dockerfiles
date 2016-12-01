@@ -171,15 +171,15 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Red-DiscordBot: A general-purpose bot by TwentySix26.')
+        description='Red-DiscordBot: A general-purpose bot by TwentySix26. '
+                    '[E] options are overridden by environment variables.')
 
     serv = parser.add_argument_group('Service options')
-    serv.add_argument('--redpy', metavar='red.py', help="Path to alternate red.py (optional)",
+    serv.add_argument('--redpy', metavar='red.py', help="[E] Path to alternate red.py (optional)",
                       default='red.py')
     serv.add_argument('-w', '--watchdog',
-                      help='Emulate systemd watchdog to auto-restart Red',
-                      action='store_true'
-                      )
+                      help='[E] Emulate systemd watchdog to auto-restart Red',
+                      action='store_true')
     serv.add_argument('-d', '--timer', help='Watchdog timer', metavar='SECS',
                       default=DEFAULT_WATCHDOG_SECS, type=int)
     serv.add_argument('--maint', metavar='file', help="Path to maintainence indicator",
@@ -190,21 +190,23 @@ if __name__ == '__main__':
                       action='store_true')
 
     creds = parser.add_argument_group('Bot credentials', "Only specify one of token or email/pass. "
-                                      "Command-line paramaters are overridden by the environment. "
-                                      "NOTE: These options DO override the bot's config.")
-    creds.add_argument('-t', '--token', help='Bot token')
-    creds.add_argument('-e', '--email', help='Bot account email')
-    creds.add_argument('-P', '--password', help='Bot account password')
+                                      "NOTE: These options OVERWRITE the bot's config if specified.")
+    creds.add_argument('-t', '--token', help='[E] Bot token')
+    creds.add_argument('-e', '--email', help='[E] Bot account email')
+    creds.add_argument('-P', '--password', help='[E] Bot account password')
 
     bot = parser.add_argument_group('Bot options', "Default bot parameters\n"
-                                    "Command-line paramaters are overridden by environment. "
                                     "These options don't override the bot's config.")
-    bot.add_argument('-p', '--prefix', help='Bot command prefix')
-    bot.add_argument('-a', '--admin', help='Default admin role')
-    bot.add_argument('-m', '--mod', help='Default mod role')
+    bot.add_argument('-p', '--prefix', help='[E] Bot command prefix')
+    bot.add_argument('-a', '--admin', help='[E] Default admin role')
+    bot.add_argument('-m', '--mod', help='[E] Default mod role')
     bot.add_argument('--args', help='Arguments passed to Red',
                      default=DEFAULT_RED_ARGS)
     parsed_args = parser.parse_args()
+
+    redpy = os.environ.get('RED_PY')
+    if redpy:
+        parsed_args.redpy = redpy
 
     if parsed_args.nop:
         exit(0)
