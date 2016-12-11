@@ -9,6 +9,7 @@ from signal import SIGINT
 from subprocess import Popen, TimeoutExpired
 from time import time, sleep
 
+
 DEFAULT_RED_ARGS = "--no-prompt"
 STOP_WAIT = 30
 DEFAULT_WATCHDOG_SECS = 90
@@ -34,7 +35,7 @@ def stop_p(p):
                 print('SIGTERM stop failed, killing the bot...')
                 p.kill()
                 return p.wait()
-    return 0 #  Default
+    return 0  # Default
 
 
 def start(red_py, args):
@@ -85,7 +86,7 @@ def start(red_py, args):
                 try:
                     ret = p.wait(timeout=args.poll)
                     error = ret is not 0
-                    break # Should break on non-timeout
+                    break  # Should break on non-timeout
                 except TimeoutExpired:
                     pass
             if args.maint and os.path.exists(args.maint):
@@ -104,6 +105,7 @@ def start(red_py, args):
         ret = stop_p(p)
         if (error or ret is not 0) and not kbi:
             exit(1)
+
 
 def check_env(args):
     from cogs.utils.settings import Settings
@@ -128,19 +130,15 @@ def check_env(args):
     s = Settings()
 
     # Set credentials if provided
+    if (token and s.email) or (email and s.token) or \
+            (email and (s.password != password)):
+        print('WARNING: New token provided, overwriting old one')
     if token:
-        if s.email not in [s.default_settings['EMAIL'], token]:
-            print('WARNING: New token provided, overwriting old one')
-        s.email = token
-        s.login_type = 'token'
+        s.token = token
     elif email:
-        if (s.email not in [s.default_settings['EMAIL'], email] or
-                s.password not in [s.default_settings['PASSWORD'], password]):
-            print('WARNING: New credentials provided, overwriting old ones')
         s.email = email
         s.password = password
-        s.login_type = 'email'
-    elif s.email == s.default_settings['EMAIL']:
+    elif not s.login_credentials:
         print("ERROR: No credentials set or provided.")
         exit(1)
 
@@ -168,6 +166,7 @@ def check_env(args):
 def main(args):
     check_env(args)
     start(args.redpy, args)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
