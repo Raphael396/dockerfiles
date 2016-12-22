@@ -34,7 +34,7 @@ def stop_p(p):
                 print('SIGTERM stop failed, killing the bot...')
                 p.kill()
                 return p.wait()
-    return 0 #  Default
+    return 0  # Default
 
 
 def start(red_py, args):
@@ -85,7 +85,7 @@ def start(red_py, args):
                 try:
                     ret = p.wait(timeout=args.poll)
                     error = ret is not 0
-                    break # Should break on non-timeout
+                    break  # Should break on non-timeout
                 except TimeoutExpired:
                     pass
             if args.maint and os.path.exists(args.maint):
@@ -104,6 +104,7 @@ def start(red_py, args):
         ret = stop_p(p)
         if (error or ret is not 0) and not kbi:
             exit(1)
+
 
 def check_env(args):
     from cogs.utils.settings import Settings
@@ -128,19 +129,15 @@ def check_env(args):
     s = Settings()
 
     # Set credentials if provided
+    if (token and s.email) or (email and s.token) or \
+            (email and (s.password != password)):
+        print('WARNING: New token provided, overwriting old one')
     if token:
-        if s.email not in [s.default_settings['EMAIL'], token]:
-            print('WARNING: New token provided, overwriting old one')
-        s.email = token
-        s.login_type = 'token'
+        s.token = token
     elif email:
-        if (s.email not in [s.default_settings['EMAIL'], email] or
-                s.password not in [s.default_settings['PASSWORD'], password]):
-            print('WARNING: New credentials provided, overwriting old ones')
         s.email = email
         s.password = password
-        s.login_type = 'email'
-    elif s.email == s.default_settings['EMAIL']:
+    elif not s.login_credentials:
         print("ERROR: No credentials set or provided.")
         exit(1)
 
@@ -156,17 +153,18 @@ def main(args):
     check_env(args)
     start(args.redpy, args)
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description="Red-SelfBot: A selfbot built on Twentysix26's Red bot.")
+        description="Red-SelfBot: A selfbot built on Twentysix26's Red bot."
+                    "[E] options are overridden by environment variables.")
 
     serv = parser.add_argument_group('Service options')
-    serv.add_argument('--redpy', metavar='red.py', help="Path to alternate red.py (optional)",
+    serv.add_argument('--redpy', metavar='red.py', help="[E] Path to alternate red.py (optional)",
                       default='red_self.py')
     serv.add_argument('-w', '--watchdog',
-                      help='Emulate systemd watchdog to auto-restart Red',
-                      action='store_true'
-                      )
+                      help='[E] Emulate systemd watchdog to auto-restart Red',
+                      action='store_true')
     serv.add_argument('-d', '--timer', help='Watchdog timer', metavar='SECS',
                       default=DEFAULT_WATCHDOG_SECS, type=int)
     serv.add_argument('--maint', metavar='file', help="Path to maintainence indicator",
@@ -176,19 +174,21 @@ if __name__ == '__main__':
     serv.add_argument('--nop', help='NOP: Exit immediately. Used to make data containers.',
                       action='store_true')
 
-    creds = parser.add_argument_group('Bot credentials', "Only specify one of token or email/pass. "
-                                      "Command-line paramaters are overridden by the environment. "
-                                      "NOTE: These options DO override the bot's config.")
-    creds.add_argument('-t', '--token', help='User token')
-    creds.add_argument('-e', '--email', help='User account email')
-    creds.add_argument('-P', '--password', help='User account password')
+    creds = parser.add_argument_group('User credentials', "Only specify one of token or email/pass. "
+                                      "NOTE: These options OVERWRITE the bot's config if specified.")
+    creds.add_argument('-t', '--token', help='[E] User token')
+    creds.add_argument('-e', '--email', help='[E] User account email')
+    creds.add_argument('-P', '--password', help='[E] User account password')
 
     bot = parser.add_argument_group('Bot options', "Default bot parameters\n"
-                                    "Command-line paramaters are overridden by environment. "
                                     "These options don't override the bot's config.")
     bot.add_argument('--args', help='Arguments passed to Red',
                      default=DEFAULT_RED_ARGS)
     parsed_args = parser.parse_args()
+
+    redpy = os.environ.get('RED_PY')
+    if redpy:
+        parsed_args.redpy = redpy
 
     if parsed_args.nop:
         exit(0)
