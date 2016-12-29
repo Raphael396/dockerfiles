@@ -1,13 +1,15 @@
 #!/usr/bin/python
 
-import socket
-import os
-import sys
 import argparse
-import traceback
+from copy import deepcopy
+import os
 from signal import SIGINT
+import socket
 from subprocess import Popen, TimeoutExpired
+import sys
 from time import time, sleep
+import traceback
+from cogs.utils.settings import Settings
 
 
 DEFAULT_RED_ARGS = "--no-prompt"
@@ -42,7 +44,7 @@ def start(red_py, args):
     red_call = [sys.executable, red_py]
     red_call.extend(args.args.split())
 
-    watchdog = args.watchdog or os.environ.get('RED_WATCHDOG', False) in [1, '1', True]
+    watchdog = args.watchdog or os.environ.get('RED_WATCHDOG') == "1"
 
     if watchdog:
         sockname = os.path.join(os.getcwd(), 'red_discordbot.sock')
@@ -107,9 +109,7 @@ def start(red_py, args):
             exit(1)
 
 
-def check_env(args):
-    from cogs.utils.settings import Settings
-
+def check_env(args, s):
     email = os.environ.get('RED_EMAIL', args.email)
     password = os.environ.get('RED_PASSWORD', args.password)
     token = os.environ.get('RED_TOKEN', args.token)
@@ -127,34 +127,63 @@ def check_env(args):
         print("ERROR: Email authentication requires password")
         exit(1)
 
-    s = Settings()
-
     # Set credentials if provided
     if (token and s.email) or (email and s.token) or \
             (email and (s.password != password)):
-        print('WARNING: New token provided, overwriting old one')
+        print('WARNING: New credentials provided, overwriting old ones')
     if token:
         s.token = token
     elif email:
         s.email = email
         s.password = password
     elif not s.login_credentials:
-        print("ERROR: No credentials set or provided.")
+        print("ERROR: No credentials set or provided. Use arguments, env "
+              " or --setup to provide them.")
         exit(1)
 
-    if s.prefixes == s.default_settings['PREFIXES']:
-        default_prefix = os.environ.get('RED_PREFIX', args.prefix)
-        if default_prefix:
-            s.prefixes = [default_prefix]
+    defaults = s.default_settings['default']
 
-    if s.bot_settings['default'] == s.default_settings['default']:
-        admin = os.environ.get('RED_ADMIN', args.admin)
-        mod = os.environ.get('RED_MOD', args.mod)
-        if admin:
-            s.default_admin = admin
-        if mod:
-            s.default_mod = mod
+    prefix = os.environ.get('RED_PREFIX', args.prefix)
+    if prefix:
+        if s.prefixes and (len(s.prefixes) != 1 or prefix != s.prefixes[0]):
+            print('WARNING: New prefix provided, overwriting old one (%s)'
+                  % s.prefixes)
+        s.prefixes = [prefix]
+    elif not s.prefixes:
+        print("ERROR: No default prefix set or provided. Use arguments, env "
+              "or --setup to provide one.")
+        exit(1)
 
+    admin = os.environ.get('RED_ADMIN', args.admin)
+    if admin:
+        default_admin = defaults['ADMIN_ROLE']
+        if default_admin != s.default_admin and s.default_admin != admin:
+            print('WARNING: New admin role provided, overwriting old one (%s)'
+                  % s.default_admin)
+        s.default_admin = admin
+
+    mod = os.environ.get('RED_MOD', args.mod)
+    if mod:
+        default_mod = defaults['MOD_ROLE']
+        if default_mod != s.default_mod and s.default_mod != mod:
+            print('WARNING: New mod role provided, overwriting old one (%s)'
+                  % s.default_mod)
+        s.default_mod = mod
+    s.save_settings()
+
+
+def get_answer(prompt=">"):
+    choices = ("yes", "y", "no", "n")
+    c = ""
+    while c not in choices:
+        c = input(prompt).lower()
+    if c.startswith("y"):
+        return True
+    else:
+        return False
+
+
+def check_path():
     userpath = os.path.expanduser('~')
     userbin = os.path.join(userpath, '.local/bin')
     currentpath = os.environ['PATH'].split(':')
@@ -164,14 +193,31 @@ def check_env(args):
 
 
 def main(args):
-    check_env(args)
+    settings = Settings(parse_args=False)
+    if args.setup:
+        if not sys.stdin.isatty():
+            print('ERROR: Console is not a TTY; cannot run interactive setup.')
+            exit(1)
+        from red import interactive_setup
+        if (settings.bot_settings != settings.default_settings and
+                get_answer(prompt='Reset settings before setup? [y/n]: ')
+            ):
+            settings.bot_settings = deepcopy(settings.default_settings)
+        interactive_setup(settings)
+        settings.save_settings()
+        print('Setup complete. Run without --setup to start the bot.')
+        exit(0)
+    check_env(args, settings)
+    check_path()
     start(args.redpy, args)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Red-DiscordBot: A general-purpose bot by TwentySix26. '
-                    '[E] options are overridden by environment variables.')
+                    '[E] options are overridden by environment variables. '
+                    'NOTE: These options OVERWRITE the bot\'s config if '
+                    'specified.')
 
     serv = parser.add_argument_group('Service options')
     serv.add_argument('--redpy', metavar='red.py', help="[E] Path to alternate red.py (optional)",
@@ -187,15 +233,15 @@ if __name__ == '__main__':
                       metavar='SECS', default=DEFAULT_POLL_INTERVAL, type=int)
     serv.add_argument('--nop', help='NOP: Exit immediately. Used to make data containers.',
                       action='store_true')
+    serv.add_argument('--setup', help='Enter credentials and other information via the console.',
+                      action='store_true')
 
-    creds = parser.add_argument_group('Bot credentials', "Only specify one of token or email/pass. "
-                                      "NOTE: These options OVERWRITE the bot's config if specified.")
+    creds = parser.add_argument_group('Bot credentials', "Only specify one of token or email/pass.")
     creds.add_argument('-t', '--token', help='[E] Bot token')
     creds.add_argument('-e', '--email', help='[E] Bot account email')
     creds.add_argument('-P', '--password', help='[E] Bot account password')
 
-    bot = parser.add_argument_group('Bot options', "Default bot parameters\n"
-                                    "These options don't override the bot's config.")
+    bot = parser.add_argument_group('Bot options', "Default bot parameters")
     bot.add_argument('-p', '--prefix', help='[E] Bot command prefix')
     bot.add_argument('-a', '--admin', help='[E] Default admin role')
     bot.add_argument('-m', '--mod', help='[E] Default mod role')
