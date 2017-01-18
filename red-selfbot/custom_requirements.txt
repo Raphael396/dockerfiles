@@ -1,5 +1,5 @@
 pip
-git+https://github.com/Rapptz/discord.py@async#egg=discord.py[voice]
+git+https://github.com/Rapptz/discord.py@async
 youtube_dl
 imgurpython
 tabulate
