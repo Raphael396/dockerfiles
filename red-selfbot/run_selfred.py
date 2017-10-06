@@ -11,7 +11,7 @@ from time import time, sleep
 
 DEFAULT_RED_ARGS = "--no-prompt"
 STOP_WAIT = 30
-DEFAULT_WATCHDOG_SECS = 90
+DEFAULT_WATCHDOG_SECS = 150
 DEFAULT_POLL_INTERVAL = 1
 
 
