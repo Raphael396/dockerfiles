@@ -43,6 +43,8 @@ def stop_p(p):
 def start(red_py, args):
     red_call = [sys.executable, red_py]
     red_call.extend(args.args.split())
+    for coid in args.co_owner:
+        red_call.extend(('--co-owner', coid))
 
     watchdog = args.watchdog or os.environ.get('RED_WATCHDOG') == "1"
 
@@ -138,7 +140,7 @@ def check_env(args, s):
         s.password = password
     elif not s.login_credentials:
         print("ERROR: No credentials set or provided. Use arguments, env "
-              " or --setup to provide them.")
+              "or --setup to provide them.")
         exit(1)
 
     defaults = s.default_settings['default']
@@ -215,15 +217,15 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Red-DiscordBot: A general-purpose bot by TwentySix26. '
-                    '[E] options are overridden by environment variables. '
+                    '[E (VAR)] options are overridden by environment variables. '
                     'NOTE: These options OVERWRITE the bot\'s config if '
                     'specified.')
 
     serv = parser.add_argument_group('Service options')
-    serv.add_argument('--redpy', metavar='red.py', help="[E] Path to alternate red.py (optional)",
+    serv.add_argument('--redpy', metavar='red.py', help="[E RED_PY] Path to alternate red.py (optional)",
                       default='red.py')
     serv.add_argument('-w', '--watchdog',
-                      help='[E] Emulate systemd watchdog to auto-restart Red',
+                      help='[E RED_WATCHDOG] Emulate systemd watchdog to auto-restart Red',
                       action='store_true')
     serv.add_argument('-d', '--timer', help='Watchdog timer', metavar='SECS',
                       default=DEFAULT_WATCHDOG_SECS, type=int)
@@ -237,14 +239,16 @@ if __name__ == '__main__':
                       action='store_true')
 
     creds = parser.add_argument_group('Bot credentials', "Only specify one of token or email/pass.")
-    creds.add_argument('-t', '--token', help='[E] Bot token')
-    creds.add_argument('-e', '--email', help='[E] Bot account email')
-    creds.add_argument('-P', '--password', help='[E] Bot account password')
+    creds.add_argument('-t', '--token', help='[E RED_TOKEN] Bot token')
+    creds.add_argument('-e', '--email', help='[E RED_EMAIL] Bot account email')
+    creds.add_argument('-P', '--password', help='[E RED_PASSWORD] Bot account password')
 
     bot = parser.add_argument_group('Bot options', "Default bot parameters")
-    bot.add_argument('-p', '--prefix', help='[E] Bot command prefix')
-    bot.add_argument('-a', '--admin', help='[E] Default admin role')
-    bot.add_argument('-m', '--mod', help='[E] Default mod role')
+    bot.add_argument('-p', '--prefix', help='[E RED_PREFIX] Bot command prefix')
+    bot.add_argument('-a', '--admin', help='[E RED_ADMIN] Default admin role')
+    bot.add_argument('-m', '--mod', help='[E RED_MOD] Default mod role')
+    bot.add_argument('-c', '--co-owner', metavar='id', action='append', default=[],
+                     help='[E RED_COOWNERS] Specify for each co-owner ID.')
     bot.add_argument('--args', help='Arguments passed to Red',
                      default=DEFAULT_RED_ARGS)
     parsed_args = parser.parse_args()
@@ -252,6 +256,9 @@ if __name__ == '__main__':
     redpy = os.environ.get('RED_PY')
     if redpy:
         parsed_args.redpy = redpy
+
+    env_coowners = os.environ.get('RED_COOWNERS', "").split(',')
+    parsed_args.co_owner.extend(env_coowners)
 
     if parsed_args.nop:
         exit(0)
