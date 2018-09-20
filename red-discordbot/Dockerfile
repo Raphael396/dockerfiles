@@ -1,7 +1,7 @@
 FROM calebj/red-discordbot:data
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libopus0 ffmpeg python3.5 libffi-dev \
+    apt-get install -y --no-install-recommends libopus0 ffmpeg python3.6 libffi-dev \
                                                git ca-certificates && \
     apt-get install -y python3-pip && \
     apt-get clean && \
@@ -19,4 +19,4 @@ RUN chown -R red:red /data/red /opt/red
 
 USER red
 
-ENTRYPOINT ["/usr/bin/python3.5", "/opt/red/run_red.py"]
+ENTRYPOINT ["/usr/bin/python3.6", "/opt/red/run_red.py"]
