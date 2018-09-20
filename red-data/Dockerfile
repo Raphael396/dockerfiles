@@ -6,7 +6,7 @@ LABEL io.calebj.project red-discordbot
 
 WORKDIR /opt/red/
 
-ARG repo=https://github.com/Twentysix26/Red-DiscordBot
+ARG repo=https://github.com/Cog-Creators/Red-DiscordBot
 ARG branch=develop
 ENV RED_REPO=${repo} RED_BRANCH=${branch}
 
