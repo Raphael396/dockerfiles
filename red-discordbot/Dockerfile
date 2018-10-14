@@ -2,7 +2,7 @@ FROM calebj/red-discordbot:data
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends libopus0 ffmpeg python3.6 libffi-dev \
-                                               git ca-certificates && \
+                                               git ca-certificates libre2-dev && \
     apt-get install -y python3-pip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*

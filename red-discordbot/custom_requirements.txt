@@ -1,3 +1,4 @@
 tabulate
 beautifulsoup4
 Pillow
+re2
